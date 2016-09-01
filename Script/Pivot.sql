@@ -20,11 +20,15 @@ When (R>=Y and R>=G) then 'R'
 When (Y>=G) then 'Y'
 Else 'G'
 END
-FROM   (SELECT [plantname], 
+FROM   (SELECT [plantname],
+				[plantkey],
                [unitname], 
-               [categorykey],
-               [categoryname], 
+			   [unitkey],
+			   [categoryname], 
+               [categorykey], 
+			    [liname],            
                [likey], 
+			  
                [year_key] AS [Year],                     
                [quarter_number] AS [Quarter], 
                [month_name] AS [Month], 
@@ -101,3 +105,31 @@ Where plantname = 'Petersburg' and UnitName= 'Unit 1' and LIName= '1-1 A/H dP'
 --WHEN (G=R) THEN 'R'
 --ELSE 'R'
 --FROM 
+
+
+--================ NEW Rollong View =======================
+
+ 
+SELECT *, 
+InRed = CONVERT(VARCHAR(100),CAST((R*100.0 / (R+Y+G)) AS Decimal(12,2))) +'%',
+InYellow  = CONVERT(VARCHAR(100),CAST((Y*100.0 / (R+Y+G)) AS Decimal(12,2))) +'%', 
+InGreen = CONVERT(VARCHAR(100),CAST((G*100.0 / (R+Y+G)) AS Decimal(12,2))) +'%'
+FROM   (SELECT [plantname], 
+			   [plantkey],			
+               [unitname], 
+			   [unitkey],
+               [categorykey],
+               [categoryname],  
+			   [likey],                                       
+               [liname],                                               
+               [status] 
+        FROM   [dbo].vw_LeadingIndicators 
+        WHERE  ([status] IS NOT NULL OR [status]!='#') 
+                             AND (DATEDIFF(DD,Day_date_d,GETDATE())<=90)
+                             ) AS SRC 
+       PIVOT ( Count([status]) 
+             FOR [status] IN ([R], 
+                            [Y], 
+                            [G]) ) AS PIV
+							ORDER BY InRed desc
+ 
